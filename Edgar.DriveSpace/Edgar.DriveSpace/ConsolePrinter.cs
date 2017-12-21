@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 
 namespace Edgar.DriveSpace
 {
@@ -27,9 +28,10 @@ namespace Edgar.DriveSpace
         private readonly ConsoleColor _defaultFg;
         private readonly ConsoleColor _defaultBg;
 
-        private const int MaxMountStringSize = 20;
-        private const int MaxPercentStringSize = 5;
-        private const int MaxDriveSizeStringSize = 7;
+        private int _maxMountStringSize = 20;
+        private int _maxPercentStringSize = 5;
+        private int _maxDriveSizeStringSize = 7;
+        private int _barStringSize = 20;
 
         public ConsolePrinter(IEnumerable<DriveInfo> drives, OS os)
         {
@@ -39,8 +41,25 @@ namespace Edgar.DriveSpace
             _os = os;
         }
 
+        private int GetLineWidthInChars()
+        {
+            return
+                _maxMountStringSize
+                + _maxDriveSizeStringSize * 2
+                + 3 // for divider " / "
+                + _barStringSize
+                + 3 // bar ![]
+                + _maxPercentStringSize + 1;
+        }
+
         public void Print()
         {
+            var largestMountNameLength = _drives.Max(x => x.Name.Length);
+            var newLineWidth = GetLineWidthInChars() - _maxMountStringSize + largestMountNameLength;
+
+            if (newLineWidth + 1 < Console.WindowWidth && largestMountNameLength > _maxMountStringSize)
+                _maxMountStringSize = largestMountNameLength+1;
+
             foreach (var drive in _drives)
                 PrintDriveInfo(drive);
         }
@@ -48,7 +67,7 @@ namespace Edgar.DriveSpace
         private void PrintDriveInfo(DriveInfo drive)
         {
             var normalizedPercentUsed = 1 - (drive.TotalFreeSpace / (double)drive.TotalSize);
-            var percentUsed = MakePercentageString(normalizedPercentUsed).PadLeft(MaxPercentStringSize, ' ');
+            var percentUsed = MakePercentageString(normalizedPercentUsed).PadLeft(_maxPercentStringSize, ' ');
 
             PrintMountString(drive);
             PrintSizeUsed(drive);
@@ -58,7 +77,7 @@ namespace Edgar.DriveSpace
             Console.WriteLine($" {percentUsed}%");
         }
 
-        private void PrintBar(int percentageFull, int size = 20)
+        private void PrintBar(int percentageFull)
         {
             if (percentageFull >= DangerSymbolPercentage)
             {
@@ -69,14 +88,14 @@ namespace Edgar.DriveSpace
             else
                 Console.Write(" "); // leave empty space to keep formatting
 
-            var step = 100 / size;
+            var step = 100 / _barStringSize;
             var bars = percentageFull / step;
             Console.Write("[");
-            for (var i = 0; i < size; i++)
+            for (var i = 0; i < _barStringSize; i++)
             {
                 if (i < bars)
                 {
-                    var p = i / (double)size *100; // percentage of current bar
+                    var p = i / (double)_barStringSize * 100; // percentage of current bar
                     var color = (p <= OkPercentage) ? OkColor 
                               : (p <= WarninPercentage) ? WarningColor 
                               : DangerColor;
@@ -125,26 +144,27 @@ namespace Edgar.DriveSpace
         {
             string mount;
             if (_os == OS.Windows)
-                mount = $"{drive.RootDirectory.FullName}({drive.VolumeLabel.CutEnd(14)})"
-                        .PadRight(MaxMountStringSize, ' ');
+                mount = $"{drive.RootDirectory.FullName}({drive.VolumeLabel.CutEnd(_maxMountStringSize)})"
+                        .PadRight(_maxMountStringSize, ' ');
             else
                 mount = drive
                     .RootDirectory
                     .FullName
-                    .PadRight(MaxMountStringSize, ' ');
+                    .CutEnd(_maxMountStringSize)
+                    .PadRight(_maxMountStringSize, ' ');
 
             Console.Write(mount);
         }
 
         private void PrintSizeUsed(DriveInfo drive)
         {
-            var sizeUsed = MakeSizeString(drive.TotalSize - drive.TotalFreeSpace).PadLeft(MaxDriveSizeStringSize, ' ');
+            var sizeUsed = MakeSizeString(drive.TotalSize - drive.TotalFreeSpace).PadLeft(_maxDriveSizeStringSize, ' ');
             Console.Write(sizeUsed);
         }
 
         private void PrintSizeTotal(DriveInfo drive)
         {
-            var sizeTotal = MakeSizeString(drive.TotalSize).PadRight(MaxDriveSizeStringSize, ' ');
+            var sizeTotal = MakeSizeString(drive.TotalSize).PadRight(_maxDriveSizeStringSize, ' ');
             Console.Write(sizeTotal);
         }
     }
