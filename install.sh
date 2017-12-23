@@ -1,30 +1,39 @@
 #!/bin/bash
 
-APP_BASE_DIR="/opt"
-SH_BIN_DIR="/usr/bin"
-PROJECT=${PWD##*/}
-DLL_BINARY="$PROJECT.dll"
+PROJECT="Edgar.DriveSpace"
+APPS="/usr/local"
+BIN="/usr/local/bin"
+COMMAND="dsize"
 
-cd "$PROJECT"
-echo "Started installing $PROJECT"
+echo "$PROJECT installer"
 
-echo "Enter project installation path:"
-read -e -p "  Path: " -i "$APP_BASE_DIR/$PROJECT" APP_INSTALL_DIR
-echo "Enter shell file installation path and name:"
-read -e -p "  Path: " -i "$SH_BIN_DIR/dsize" SH_INSTALL_PATH
+echo "Are you sure you want to install $PROJECT?"
+read -p "(Yes/No): " CONFIRMATION
 
-if [ ! -d "$APP_INSTALL_DIR" ]; then
-  mkdir "$APP_INSTALL_DIR"
+if [[ ! "$CONFIRMATION" =~ ^[Yy].*$ ]]; then
+  echo "Installation cancelled"
+  exit 0
 fi
 
-dotnet publish -c Release -o "$APP_INSTALL_DIR"
-
-if [ -f "$SH_INSTALL_PATH" ]; then
-  rm "$SH_INSTALL_PATH"
+if [ ! -d "$APPS/$PROJECT" ]; then
+  mkdir "$APPS/$PROJECT"
 fi
-echo "#!/bin/bash" > "$SH_INSTALL_PATH"
-echo "dotnet \"$APP_INSTALL_DIR/$DLL_BINARY\"" > "$SH_INSTALL_PATH"
-chmod 755 "$SH_INSTALL_PATH"
 
-echo -e "Installed to \e[4m$APP_INSTALL_DIR\e[0m with shell \e[4m$SH_INSTALL_PATH\e[0m"
+if [ ! -d "$BIN" ]; then
+  mkdir "$BIN"
+fi
+
+dotnet publish "$PROJECT/$PROJECT.csproj" -c Release -o "$APPS/$PROJECT"
+
+if [ -f "$APPS/$PROJECT/$COMMAND" ]; then
+  rm "$APPS/$PROJECT/$COMMAND"
+fi
+
+echo "#!/bin/bash" > "$APPS/$PROJECT/$COMMAND"
+echo "dotnet \"$APPS/$PROJECT/$PROJECT.dll\"" > "$APPS/$PROJECT/$COMMAND"
+chmod +x "$APPS/$PROJECT/$COMMAND"
+
+ln -s "$APPS/$PROJECT/$COMMAND" "$BIN/$COMMAND"
+
+echo -e "Installed to \e[4m$APPS/$PROJECT\e[0m with shell \e[4m$BIN/$COMMAND\e[0m"
 echo -e "\e[32mInstallation complete\e[0m"
