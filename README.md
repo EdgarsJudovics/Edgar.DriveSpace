@@ -13,12 +13,11 @@ OS X terminal
 Windows terminal  
 ![Windows Terminal](./Screenshots/win_terminal.png)
 
-# Requirements
+# Installation
+## Requirements
 * .NET Core 2.0 or higher installed on the machine to compile the source.  
 To see if it's installed run `dotnet --version` in terminal/console.
-* Admin privileges
-
-# Installation
+* Admin privileges (for installation only)
 
 ## Linux/OS X
 1) In terminal run  
@@ -32,6 +31,7 @@ sudo ./install.sh
 
 ## Windows
 1) Clone or download project  
-2) Run install.bat as admin (right click, run as admin) or call it from elevated cmd  
+2) Run `install.bat` as admin (right click, run as admin) or call it from elevated cmd  
 3) Follow instructions  
 4) Run `dsize` in cmd/powershell/terminal  
+
